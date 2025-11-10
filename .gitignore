@@ -1,0 +1,24 @@
+# Ignorar dependencias del BACKEND
+/backend/node_modules/
+
+# Ignorar dependencias del FRONTEND
+/frontend/node_modules/
+
+# Ignorar la carpeta de 'build' del frontend
+/frontend/build/
+
+# Ignorar archivos de entorno (secretos)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Archivos de registros y sistema
+.DS_Store
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+/coverage/
+/.pnp
+.pnp.js
