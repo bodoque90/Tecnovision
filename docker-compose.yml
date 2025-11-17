@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  # --- BASE DE DATOS ---
+  db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      # 1. Persistencia de datos (para no perderlos al apagar)
+      - postgres_data:/var/lib/postgresql/data
+      # 2. ¡LA MAGIA! Ejecuta tu script SQL al iniciar
+      - ./backend/database.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+
+  # --- BACKEND ---
+  backend:
+    build: ./backend
+    restart: always
+    ports:
+      - "3001:3001"
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      - db
+
+  # --- FRONTEND ---
+  frontend:
+    build: ./frontend
+    restart: always
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
