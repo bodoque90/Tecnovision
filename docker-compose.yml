@@ -6,24 +6,24 @@ services:
     image: postgres:15-alpine
     restart: always
     environment:
-      
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      # 1. Persistencia de datos (para no perderlos al apagar)
       - postgres_data:/var/lib/postgresql/data
-      # 2. ¡LA MAGIA! Ejecuta tu script SQL al iniciar
       - ./backend/database.sql:/docker-entrypoint-initdb.d/init.sql
-    ports:
+    # Quitamos ports para que solo sea accesible internamente (opcional, puedes dejarlos para DBeaver)
+    ports: 
       - "5432:5432"
 
-  # --- BACKEND ---
+  # --- BACKEND (API) ---
   backend:
     build: ./backend
     restart: always
-    ports:
-      - "3001:3001"
+    # ¡YA NO EXPONEMOS EL PUERTO 3001 A TU PC!
+    # Solo lo exponemos dentro de la red de Docker
+    expose:
+      - "3001"
     environment:
       POSTGRES_HOST: db
       POSTGRES_DB: ${POSTGRES_DB}
@@ -32,14 +32,44 @@ services:
     depends_on:
       - db
 
-  # --- FRONTEND ---
+  # --- FRONTEND (REACT) ---
   frontend:
     build: ./frontend
     restart: always
-    ports:
-      - "3000:80"
+    # ¡YA NO EXPONEMOS EL PUERTO 3000 A TU PC!
+    expose:
+      - "80"
     depends_on:
       - backend
+
+  # --- PROXY INVERSO (NGINX) ---
+  nginx:
+    image: nginx:alpine
+    restart: always
+    ports:
+      - "80:80" # Este es el único puerto que usarás en tu navegador
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - frontend
+      - backend
+
+  # --- SISTEMA DE BACKUP ---
+  backup:
+    image: postgres:15-alpine # Usamos la misma imagen que la BD porque ya trae pg_dump
+    restart: always
+    depends_on:
+      - db
+    environment:
+      # Necesita las mismas credenciales para conectarse
+      POSTGRES_HOST: db
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./scripts:/scripts   # Montamos el script
+      - ./backups:/backups   # Montamos la carpeta donde se guardarán
+    command: sh /scripts/backup.sh # Ejecutamos el script al inicio
 
 volumes:
   postgres_data:
