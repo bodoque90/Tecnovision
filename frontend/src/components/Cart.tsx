@@ -14,6 +14,7 @@ interface CartProps {
   items: CartItem[];
   onUpdateQuantity: (productId: number, quantity: number) => void;
   onRemoveItem: (productId: number) => void;
+  onCheckout?: (items: CartItem[]) => Promise<void>;
 }
 
 export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemoveItem }: CartProps) {
@@ -65,7 +66,7 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemoveItem }:
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
+                            onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
                           disabled={item.quantity <= 1}
                           className="h-8 w-8 p-0"
                         >
@@ -78,6 +79,7 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemoveItem }:
                           variant="outline"
                           size="sm"
                           onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
+                          disabled={item.quantity >= (item.stock ?? Number.MAX_SAFE_INTEGER)}
                           className="h-8 w-8 p-0"
                         >
                           <Plus className="w-3 h-3" />
@@ -103,7 +105,7 @@ export function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemoveItem }:
                 <span className="text-xl">${total.toLocaleString()}</span>
               </div>
               
-              <Button className="w-full" size="lg">
+              <Button className="w-full" size="lg" onClick={async () => { if (onCheckout) await onCheckout(items); }}>
                 Proceder al Pago
               </Button>
             </div>

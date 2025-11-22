@@ -8,6 +8,7 @@ export interface Product {
   id: number;
   name: string;
   price: number;
+  stock: number;
   originalPrice?: number;
   image: string;
   category: string;
@@ -72,6 +73,7 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
               ${product.originalPrice.toLocaleString()}
             </span>
           )}
+          <span className="ml-auto text-sm text-gray-600">Stock: {product.stock}</span>
         </div>
       </CardContent>
 

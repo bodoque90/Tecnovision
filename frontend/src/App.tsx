@@ -1,4 +1,5 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { ShoppingCart, Menu, Search, Laptop, Smartphone, Headphones, Watch } from "lucide-react";
 import { Button } from "./components/ui/button";
 import { Input } from "./components/ui/input";
@@ -7,86 +8,9 @@ import { ProductCard, Product } from "./components/ProductCard";
 import { Cart, CartItem } from "./components/Cart";
 import { Hero } from "./components/Hero";
 import { Tabs, TabsList, TabsTrigger } from "./components/ui/tabs";
+// Se elimina el wrapper Radix Dialog en esta pantalla; usamos un modal portal sencillo.
 
-const products: Product[] = [
-  {
-    id: 1,
-    name: "Laptop Pro 15 Pulgadas",
-    price: 1299,
-    originalPrice: 1599,
-    image: "https://images.unsplash.com/flagged/photo-1576697010739-6373b63f3204?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsYXB0b3AlMjBjb21wdXRlciUyMGRlc2t8ZW58MXx8fHwxNzYzMzg4MDg2fDA&ixlib=rb-4.1.0&q=80&w=1080",
-    category: "Laptops",
-    rating: 5,
-    inStock: true,
-  },
-  {
-    id: 2,
-    name: "Auriculares Inalámbricos Premium",
-    price: 299,
-    originalPrice: 399,
-    image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx3aXJlbGVzcyUyMGhlYWRwaG9uZXN8ZW58MXx8fHwxNzYzMjgxOTc0fDA&ixlib=rb-4.1.0&q=80&w=1080",
-    category: "Audio",
-    rating: 5,
-    inStock: true,
-  },
-  {
-    id: 3,
-    name: "Smartphone Ultra 5G",
-    price: 899,
-    image: "https://images.unsplash.com/photo-1741061963569-9d0ef54d10d2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzbWFydHBob25lJTIwbW9iaWxlfGVufDF8fHx8MTc2MzM1MTgyMnww&ixlib=rb-4.1.0&q=80&w=1080",
-    category: "Smartphones",
-    rating: 4,
-    inStock: true,
-  },
-  {
-    id: 4,
-    name: "Smartwatch Serie 7",
-    price: 449,
-    originalPrice: 549,
-    image: "https://images.unsplash.com/photo-1739287700815-7eef4abaab4d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzbWFydHdhdGNoJTIwdGVjaG5vbG9neXxlbnwxfHx8fDE3NjMzMzk4OTZ8MA&ixlib=rb-4.1.0&q=80&w=1080",
-    category: "Wearables",
-    rating: 5,
-    inStock: true,
-  },
-  {
-    id: 5,
-    name: "Tablet Pro 12.9 Pulgadas",
-    price: 799,
-    image: "https://images.unsplash.com/photo-1714071803623-9594e3b77862?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx0YWJsZXQlMjBkZXZpY2V8ZW58MXx8fHwxNzYzMjk3NDA2fDA&ixlib=rb-4.1.0&q=80&w=1080",
-    category: "Tablets",
-    rating: 4,
-    inStock: true,
-  },
-  {
-    id: 6,
-    name: "Teclado Mecánico RGB Gaming",
-    price: 159,
-    originalPrice: 199,
-    image: "https://images.unsplash.com/photo-1612198188060-c7c2a3b66eae?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxnYW1pbmclMjBrZXlib2FyZHxlbnwxfHx8fDE3NjMzMTU4Mjd8MA&ixlib=rb-4.1.0&q=80&w=1080",
-    category: "Accesorios",
-    rating: 5,
-    inStock: true,
-  },
-  {
-    id: 7,
-    name: "Mouse Inalámbrico Ergonómico",
-    price: 79,
-    image: "https://images.unsplash.com/photo-1660491083562-d91a64d6ea9c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx3aXJlbGVzcyUyMG1vdXNlfGVufDF8fHx8MTc2MzM5NjA0MHww&ixlib=rb-4.1.0&q=80&w=1080",
-    category: "Accesorios",
-    rating: 4,
-    inStock: false,
-  },
-  {
-    id: 8,
-    name: "Cámara Digital 4K",
-    price: 1199,
-    originalPrice: 1499,
-    image: "https://images.unsplash.com/photo-1636569826709-8e07f6104992?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjYW1lcmElMjB0ZWNobm9sb2d5fGVufDF8fHx8MTc2MzM3MjA4Mnww&ixlib=rb-4.1.0&q=80&w=1080",
-    category: "Cámaras",
-    rating: 5,
-    inStock: true,
-  },
-];
+// Los productos ahora se obtienen desde el backend en tiempo de ejecución
 
 const categories = [
   { name: "Todos", icon: null },
@@ -97,44 +21,348 @@ const categories = [
 ];
 
 export default function App() {
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [cartItems, setCartItems] = useState([] as CartItem[]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("Todos");
   const [searchQuery, setSearchQuery] = useState("");
-  const productsRef = useRef<HTMLDivElement>(null);
+  const productsRef = useRef(null as HTMLDivElement | null);
+
+  const [products, setProducts] = useState([] as Product[]);
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(null as string | null);
+
+  const getImageForCategory = (cat?: string) => {
+    const c = (cat || '').toLowerCase();
+    switch (c) {
+      case 'laptops':
+        return 'https://images.unsplash.com/flagged/photo-1576697010739-6373b63f3204?auto=format&fit=crop&w=1080&q=80';
+      case 'smartphones':
+        return 'https://images.unsplash.com/photo-1741061963569-9d0ef54d10d2?auto=format&fit=crop&w=1080&q=80';
+      case 'audio':
+        return 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=1080&q=80';
+      case 'wearables':
+        return 'https://images.unsplash.com/photo-1739287700815-7eef4abaab4d?auto=format&fit=crop&w=1080&q=80';
+      default:
+        return 'https://images.unsplash.com/photo-1636569826709-8e07f6104992?auto=format&fit=crop&w=1080&q=80';
+    }
+  };
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch('http://localhost:3001/api/productos');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+
+        const mapped: Product[] = (data || []).map((p: any) => {
+          const rawCat = (p.categoria ?? p.category) || 'Otros';
+          const cat = String(rawCat);
+          return {
+            id: p.id,
+            name: p.nombre ?? p.name ?? 'Sin nombre',
+            price: p.precio ?? p.price ?? 0,
+            originalPrice: p.originalPrice ?? undefined,
+            image: p.image ?? getImageForCategory(p.categoria ?? p.category),
+            category: cat.charAt(0).toUpperCase() + cat.slice(1),
+            stock: p.stock ?? 0,
+            rating: p.rating ?? 4,
+            inStock: (p.stock ?? 0) > 0,
+          } as Product;
+        });
+
+        setProducts(mapped);
+      } catch (err) {
+        console.error('Error fetching productos:', err);
+        setFetchError('Error cargando productos');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
+  // Formulario para crear / editar
+  const [editingId, setEditingId] = useState(null as number | null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [formNombre, setFormNombre] = useState('');
+  const [formDescripcion, setFormDescripcion] = useState('');
+  const [formPrecio, setFormPrecio] = useState('' as number | '');
+  const [formStock, setFormStock] = useState('' as number | '');
+  const [formCategoria, setFormCategoria] = useState('laptops');
+
+  const resetForm = () => {
+    setEditingId(null);
+    setFormNombre('');
+    setFormDescripcion('');
+    setFormPrecio('');
+    setFormStock('');
+    setFormCategoria('laptops');
+    setModalOpen(false);
+  };
+
+  const openEdit = (p: Product) => {
+    console.log('openEdit called', p);
+    setEditingId(p.id as number);
+    setFormNombre(p.name || '');
+    setFormDescripcion((p as any).descripcion ?? '');
+    setFormPrecio(p.price ?? 0);
+    setFormStock((p as any).stock ?? (p.inStock ? 1 : 0));
+    setFormCategoria(((p.category || 'laptops') + '').toLowerCase());
+    setModalOpen(true);
+  };
+
+  // Forzar pointer-events en el body cuando el modal esté abierto
+  useEffect(() => {
+    const prev = document.body.style.pointerEvents;
+    if (modalOpen) {
+      try {
+        document.body.style.pointerEvents = 'auto';
+      } catch (e) {
+        // ignore
+      }
+    } else {
+      try {
+        document.body.style.pointerEvents = prev || '';
+      } catch (e) {
+        // ignore
+      }
+    }
+    return () => {
+      try {
+        document.body.style.pointerEvents = prev || '';
+      } catch (e) {}
+    };
+  }, [modalOpen]);
+
+  const handleSubmitProduct = async (e: any) => {
+    e?.preventDefault?.();
+    const payload = {
+      nombre: formNombre,
+      descripcion: formDescripcion,
+      precio: Number(formPrecio) || 0,
+      stock: Number(formStock) || 0,
+      categoria: (formCategoria || 'laptops').toLowerCase(),
+    };
+
+    try {
+      if (editingId) {
+        const res = await fetch(`http://localhost:3001/api/productos/${editingId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error('Error actualizando');
+        const updated = await res.json();
+        setProducts((prev: Product[]) => prev.map((p) => (p.id === updated.id ? (() => {
+          const rawCat = (updated.categoria ?? updated.category) || '';
+          const cat = String(rawCat);
+          return {
+            id: updated.id,
+            name: updated.nombre ?? updated.name,
+            price: updated.precio ?? updated.price,
+            image: updated.image ?? getImageForCategory(updated.categoria),
+            stock: updated.stock ?? 0,
+            category: cat ? cat.charAt(0).toUpperCase() + cat.slice(1) : '',
+            rating: updated.rating ?? 4,
+            inStock: (updated.stock ?? 0) > 0,
+          } as Product;
+        })() : p)));
+      } else {
+        const res = await fetch('http://localhost:3001/api/productos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error('Error creando');
+        const created = await res.json();
+        const rawCat = (created.categoria ?? created.category) || '';
+        const cat = String(rawCat);
+        const mapped = {
+          id: created.id,
+          name: created.nombre ?? created.name,
+          price: created.precio ?? created.price,
+          image: created.image ?? getImageForCategory(created.categoria),
+          stock: created.stock ?? 0,
+          category: cat ? cat.charAt(0).toUpperCase() + cat.slice(1) : '',
+          rating: created.rating ?? 4,
+          inStock: (created.stock ?? 0) > 0,
+        } as Product;
+        setProducts((prev: Product[]) => [mapped, ...prev]);
+      }
+      resetForm();
+    } catch (err) {
+      console.error(err);
+      alert('Error creando/actualizando producto');
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    console.log('handleDelete called', id);
+    if (!confirm('¿Eliminar producto?')) return;
+    try {
+      const res = await fetch(`http://localhost:3001/api/productos/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Error eliminando');
+      setProducts((prev: Product[]) => prev.filter((p) => p.id !== id));
+    } catch (err) {
+      console.error(err);
+      alert('Error eliminando producto');
+    }
+  };
+
+  const handleIncrease = async (id: number, cantidad = 1) => {
+    console.log('handleIncrease called', id, cantidad);
+    try {
+      const res = await fetch(`http://localhost:3001/api/productos/${id}/aumentar`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cantidad }),
+      });
+      if (!res.ok) throw new Error('Error aumentando');
+      const updated = await res.json();
+      setProducts((prev: Product[]) => prev.map((p) => (p.id === updated.id ? (() => {
+        const rawCat = (updated.categoria ?? updated.category) || '';
+        const cat = String(rawCat);
+        return {
+          id: updated.id,
+          name: updated.nombre ?? updated.name,
+          price: updated.precio ?? updated.price,
+          image: updated.image ?? getImageForCategory(updated.categoria),
+          stock: updated.stock ?? 0,
+          category: cat ? cat.charAt(0).toUpperCase() + cat.slice(1) : '',
+          rating: updated.rating ?? 4,
+          inStock: (updated.stock ?? 0) > 0,
+        } as Product;
+      })() : p)));
+    } catch (err) {
+      console.error(err);
+      alert('Error aumentando stock');
+    }
+  };
 
   const handleAddToCart = (product: Product) => {
-    setCartItems((prev) => {
+    setCartItems((prev: CartItem[]) => {
       const existing = prev.find((item) => item.id === product.id);
       if (existing) {
+        const max = product.stock ?? 0;
+        if (existing.quantity >= max) {
+          alert('No puedes agregar más unidades: límite de stock alcanzado');
+          return prev;
+        }
         return prev.map((item) =>
           item.id === product.id
             ? { ...item, quantity: item.quantity + 1 }
             : item
         );
       }
-      return [...prev, { ...product, quantity: 1 }];
+      if ((product.stock ?? 0) <= 0) {
+        alert('Producto sin stock');
+        return prev;
+      }
+      return [...prev, { ...(product as any), quantity: 1 }];
     });
   };
 
   const handleUpdateQuantity = (productId: number, quantity: number) => {
     if (quantity < 1) return;
-    setCartItems((prev) =>
-      prev.map((item) =>
-        item.id === productId ? { ...item, quantity } : item
-      )
+    setCartItems((prev: CartItem[]) =>
+      prev.map((item) => {
+        if (item.id !== productId) return item;
+        const max = item.stock ?? 0;
+        if (quantity > max) {
+          alert('No puedes establecer una cantidad mayor al stock disponible');
+          return { ...item, quantity: max };
+        }
+        return { ...item, quantity };
+      })
     );
   };
 
   const handleRemoveItem = (productId: number) => {
-    setCartItems((prev) => prev.filter((item) => item.id !== productId));
+    setCartItems((prev: CartItem[]) => prev.filter((item) => item.id !== productId));
+  };
+
+  const handleCheckout = async (items: CartItem[]) => {
+    if (!items || items.length === 0) {
+      alert('Carrito vacío');
+      return;
+    }
+
+    try {
+      const payload = { items: items.map((it) => ({ id: it.id, cantidad: it.quantity })) };
+      const res = await fetch('http://localhost:3001/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        if (data && data.productId) {
+          alert('Error: Stock insuficiente para el producto id ' + data.productId);
+          // Refrescar productos para sincronizar cantidades reales
+          const r = await fetch('http://localhost:3001/api/productos');
+          const latest = await r.json();
+          const mapped: Product[] = (latest || []).map((p: any) => {
+            const rawCat = (p.categoria ?? p.category) || 'Otros';
+            const cat = String(rawCat);
+            return {
+              id: p.id,
+              name: p.nombre ?? p.name ?? 'Sin nombre',
+              price: p.precio ?? p.price ?? 0,
+              originalPrice: p.originalPrice ?? undefined,
+              image: p.image ?? getImageForCategory(p.categoria ?? p.category),
+              category: cat.charAt(0).toUpperCase() + cat.slice(1),
+              stock: p.stock ?? 0,
+              rating: p.rating ?? 4,
+              inStock: (p.stock ?? 0) > 0,
+            } as Product;
+          });
+          setProducts(mapped);
+        } else {
+          alert('Error procesando el pago');
+        }
+        return;
+      }
+
+      // Respuesta OK: actualizar stocks locales
+      if (data && Array.isArray(data.products)) {
+        setProducts((prev) => prev.map((p) => {
+          const upd = data.products.find((u: any) => u.id === p.id);
+          if (upd) {
+            const rawCat = (upd.categoria ?? upd.category) || '';
+            const cat = String(rawCat);
+            return {
+              id: upd.id,
+              name: upd.nombre ?? upd.name ?? p.name,
+              price: upd.precio ?? upd.price ?? p.price,
+              image: upd.image ?? p.image,
+              stock: upd.stock ?? 0,
+              category: cat ? cat.charAt(0).toUpperCase() + cat.slice(1) : p.category,
+              rating: upd.rating ?? p.rating,
+              inStock: (upd.stock ?? 0) > 0,
+            } as Product;
+          }
+          return p;
+        }));
+      }
+
+      // Vaciar carrito y cerrar
+      setCartItems([]);
+      setIsCartOpen(false);
+      alert('Pago procesado correctamente. Gracias por tu compra');
+    } catch (err) {
+      console.error('Checkout error', err);
+      alert('Error procesando el pago');
+    }
   };
 
   const scrollToProducts = () => {
     productsRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const filteredProducts = products.filter((product) => {
+  const filteredProducts = products.filter((product: Product) => {
     const matchesCategory =
       selectedCategory === "Todos" || product.category === selectedCategory;
     const matchesSearch =
@@ -143,7 +371,7 @@ export default function App() {
     return matchesCategory && matchesSearch;
   });
 
-  const cartItemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  const cartItemCount = cartItems.reduce((sum: number, item: CartItem) => sum + item.quantity, 0);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -209,7 +437,7 @@ export default function App() {
                 placeholder="Buscar productos..."
                 className="pl-10"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e: any) => setSearchQuery(e.target.value)}
               />
             </div>
           </div>
@@ -227,15 +455,65 @@ export default function App() {
           </Tabs>
         </div>
 
+        {/* Botón para abrir modal de crear producto (usando portal modal) */}
+        <div className="mb-6 flex justify-end">
+          <button type="button" onClick={() => setModalOpen(true)} className="px-4 py-2 bg-primary text-white rounded">Agregar producto</button>
+        </div>
+
+        {/* Fallback modal (portal) por si Radix falla: */}
+        {modalOpen && typeof document !== 'undefined' && createPortal(
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/50" onClick={() => setModalOpen(false)} />
+            <div className="bg-white w-[640px] max-w-[calc(100%-2rem)] p-6 rounded shadow-lg relative" style={{ zIndex: 100000 }}>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold">{editingId ? 'Editar producto' : 'Agregar producto'}</h3>
+                <button onClick={() => { resetForm(); }} className="text-gray-600">Cerrar</button>
+              </div>
+              <form onSubmit={(e) => { handleSubmitProduct(e); }} className="grid grid-cols-1 gap-3">
+                <input className="border p-2 rounded" placeholder="Nombre" value={formNombre} onChange={(e: any) => setFormNombre(e.target.value)} required />
+                <select className="border p-2 rounded" value={formCategoria} onChange={(e: any) => setFormCategoria(e.target.value)}>
+                  <option value="laptops">laptops</option>
+                  <option value="smartphones">smartphones</option>
+                  <option value="audio">audio</option>
+                  <option value="wearables">wearables</option>
+                </select>
+                <input className="border p-2 rounded" placeholder="Precio" type="number" value={formPrecio as any} onChange={(e: any) => setFormPrecio(e.target.value === '' ? '' : Number(e.target.value))} required />
+                <input className="border p-2 rounded" placeholder="Stock" type="number" value={formStock as any} onChange={(e: any) => setFormStock(e.target.value === '' ? '' : Number(e.target.value))} />
+                <textarea className="border p-2 rounded" placeholder="Descripción" value={formDescripcion} onChange={(e: any) => setFormDescripcion(e.target.value)} />
+                <div className="flex gap-2 justify-end">
+                  <button className="px-4 py-2 bg-primary text-white rounded" type="submit">{editingId ? 'Actualizar' : 'Crear'}</button>
+                  <button type="button" onClick={() => resetForm()} className="px-4 py-2 border rounded">Cancelar</button>
+                </div>
+              </form>
+            </div>
+          </div>,
+          document.body
+        )}
+
         {/* Products Grid */}
-        {filteredProducts.length > 0 ? (
+        {loading ? (
+          <div className="text-center py-12 text-gray-500">
+            <p>Cargando productos...</p>
+          </div>
+        ) : fetchError ? (
+          <div className="text-center py-12 text-red-500">
+            <p>{fetchError}</p>
+          </div>
+        ) : filteredProducts.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredProducts.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                onAddToCart={handleAddToCart}
-              />
+              <div key={product.id} className="relative">
+                <ProductCard
+                  product={product}
+                  onAddToCart={handleAddToCart}
+                />
+
+                <div className="mt-2 flex gap-2 justify-center">
+                  <button type="button" onClick={() => openEdit(product)} className="px-3 py-1 border rounded text-sm">Editar</button>
+                  <button type="button" onClick={() => handleDelete(product.id as number)} className="px-3 py-1 border rounded text-sm text-red-600">Eliminar</button>
+                  <button type="button" onClick={() => handleIncrease(product.id as number, 1)} className="px-3 py-1 border rounded text-sm">+Stock</button>
+                </div>
+              </div>
             ))}
           </div>
         ) : (
@@ -299,7 +577,10 @@ export default function App() {
         items={cartItems}
         onUpdateQuantity={handleUpdateQuantity}
         onRemoveItem={handleRemoveItem}
+        onCheckout={handleCheckout}
+        
       />
     </div>
   );
 }
+ 

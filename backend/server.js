@@ -5,6 +5,14 @@ const cors = require('cors'); // Importamos cors
 
 
 const db = require('./db');
+// DEBUG: imprimir tipo/estado de las vars de entorno relacionadas con BD
+console.log('DB ENV:', {
+  POSTGRES_USER: typeof process.env.POSTGRES_USER === 'undefined' ? null : process.env.POSTGRES_USER,
+  POSTGRES_HOST: typeof process.env.POSTGRES_HOST === 'undefined' ? null : process.env.POSTGRES_HOST,
+  POSTGRES_DB: typeof process.env.POSTGRES_DB === 'undefined' ? null : process.env.POSTGRES_DB,
+  POSTGRES_PASSWORD_type: typeof process.env.POSTGRES_PASSWORD,
+  POSTGRES_PASSWORD_len: process.env.POSTGRES_PASSWORD ? String(process.env.POSTGRES_PASSWORD).length : 0,
+});
 
 const productModel = require('./models/productModel');
 const app = express();
@@ -72,7 +80,101 @@ app.post('/api/productos', async (req, res) => {
 
 
 
-// Iniciamos el servidor
+// (La llamada a app.listen se realiza al final del archivo)
+
+// PUT /api/productos/:id -> actualizar producto
+app.put('/api/productos/:id', async (req, res) => {
+  const { id } = req.params;
+  const { nombre, descripcion, precio, stock, categoria } = req.body;
+
+  if (!nombre || precio === undefined || !categoria) {
+    return res.status(400).json({ error: 'Nombre, precio y categoría son requeridos' });
+  }
+
+  try {
+    const actualizado = await productModel.actualizarProducto(id, { nombre, descripcion, precio, stock: stock || 0, categoria });
+    if (!actualizado) return res.status(404).json({ error: 'Producto no encontrado' });
+    res.json(actualizado);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al actualizar el producto' });
+  }
+});
+
+// DELETE /api/productos/:id -> eliminar producto
+app.delete('/api/productos/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const eliminado = await productModel.eliminarProducto(id);
+    if (!eliminado) return res.status(404).json({ error: 'Producto no encontrado' });
+    res.json({ message: 'Producto eliminado', producto: eliminado });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al eliminar el producto' });
+  }
+});
+
+// PATCH /api/productos/:id/aumentar -> aumentar stock
+app.patch('/api/productos/:id/aumentar', async (req, res) => {
+  const { id } = req.params;
+  const { cantidad } = req.body;
+  const qty = Number(cantidad) || 0;
+  if (qty === 0) return res.status(400).json({ error: 'Cantidad inválida' });
+
+  try {
+    const actualizado = await productModel.aumentarStock(id, qty);
+    if (!actualizado) return res.status(404).json({ error: 'Producto no encontrado' });
+    res.json(actualizado);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al aumentar stock' });
+  }
+});
+
+// POST /api/checkout -> procesar compra y descontar stock (transacción)
+const { pool } = db;
+app.post('/api/checkout', async (req, res) => {
+  const { items } = req.body; // items: [{ id, cantidad }]
+  if (!Array.isArray(items) || items.length === 0) return res.status(400).json({ error: 'Carrito vacío' });
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const updatedProducts = [];
+
+    for (const it of items) {
+      const id = Number(it.id);
+      const cantidad = Number(it.cantidad) || 0;
+      if (!id || cantidad <= 0) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ error: 'Item inválido en carrito' });
+      }
+
+      const { rows } = await client.query(
+        'UPDATE productos SET stock = stock - $1 WHERE id = $2 AND stock >= $1 RETURNING *',
+        [cantidad, id]
+      );
+
+      if (rows.length === 0) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ error: 'Stock insuficiente', productId: id });
+      }
+
+      updatedProducts.push(rows[0]);
+    }
+
+    await client.query('COMMIT');
+    res.json({ success: true, products: updatedProducts });
+  } catch (error) {
+    await client.query('ROLLBACK').catch(() => {});
+    console.error('Error en checkout:', error);
+    res.status(500).json({ error: 'Error procesando pago' });
+  } finally {
+    client.release();
+  }
+});
+
+// iniciar servidor al final para asegurarnos que todas las rutas estén registradas
 app.listen(port, () => {
   console.log(`Servidor backend corriendo en http://localhost:${port}`);
 });
